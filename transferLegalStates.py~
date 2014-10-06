@@ -1,0 +1,13 @@
+
+
+def transferLegalStates():
+
+    oldCode = open("TTT.py","r").read()
+    newCode = open("TTT2.py","w")
+
+    newCode.write(oldCode)
+
+
+if __name__ = '__main__':
+
+    transferLegalStates()
