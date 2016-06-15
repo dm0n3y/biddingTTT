@@ -6,6 +6,7 @@ A KevPaDa module for running real-valued and discrete-valued bidding Tic-Tac-Toe
 """
 
 import math
+import os
 import sys
 import copy
 import time
@@ -36,41 +37,44 @@ def flush():
 
 def partitionByDistance():
 	"""
-	This method assumes that a file 'TTTLegalStates.txt' exists and contains
-	all legal states, where each line contains two comma-delimited tokens and
-	where the binary form of each token represents the state of a player's
-	pieces on the board. The tokens are encoded in decimal as: x,o
-	
+	This method assumes that a file '.legalStates' exists and contains
+	all legal states, where each line contains two comma-delimited tokens
+        and where the binary form of each token represents the state of a
+        player's pieces on the board. The tokens are encoded in decimal as: x,o
+
 	Suppose x is 111000000 and
 	suppose o is 000110110. Then the bitwise OR of 
 	the two is:  111110110.
-	
+
 	Since the bitwise OR of x and o  has two zeroes (i.e., the
 	correponding TTT has two blanks squares), we say that state x,o 
 	is "two away" from a full board.  For any pair of bitwise tokens
 	that are "two away" from a full board, we write those tokens to a 
-	file Distance2.  We do same thing for all k from 0 to 8, where
+	file 'distance2'.  We do same thing for all k from 0 to 8, where
 	k is the distance away from a full board.  We do not bother with 
 	k = 9, as the only game state that satisfies this is the start state;
-	hence, there is no 'Distance9' file.
-		
+	hence, there is no 'distance9' file.
+
 	This partitions all legal states by their distance from a full state.
 	This is useful because we must calculate Richman and discrete-Richman
 	values backwards-recursively (that is, the Richman value of any state
-	is determined by the Richman values of its child states.) With the states 
-	partitioned by distance from a full state, and with the knowledge that any 
-	child states of a given gamestate must be 1 closer to a full state, we can 
-	systematically calculate the Richman values for all terminal nodes (that
-	is, all states in Distance0), then for all states in Distance1, then in
-	Distance2, and so on.
-	
+	is determined by the Richman values of its child states). With the
+        states partitioned by distance from a full state, and with the knowledge
+        that any child states of a given gamestate must be 1 closer to a full
+        state, we can systematically calculate the Richman values for all
+        terminal nodes (that is, all states in distance0), then for all states
+        in distance1, then in distance2, and so on.
+
 	"""
 	debug(str(time.time()) + "\tPartitioning files by distance...")
+        distances = os.getcwd() + "/.distances"
+        if not os.path.exists(distances):
+                os.makedirs(distances)
 	writers = [None for i in range(9)]
 	for i in range(9):
-		writers[i] = open("Distance" + str(i), "w")
-		
-	f = open("TTTLegalStates.txt", "r")
+		writers[i] = open(".distances/distance" + str(i), "w")
+
+	f = open(".legalStates", "r")
 	lines = f.readlines()
 	f.close()
 
@@ -82,16 +86,15 @@ def partitionByDistance():
 		if num == 9: continue
 		writers[num].write(x + "," + o)
 
-	for writer in writers: 
+	for writer in writers:
 		writer.close()
 
-		
+
 def getNodes(i):
-	""" 
-	Returns a list of nodes read from a specified 'Distance_' file. 
-	
+	"""
+	Returns a list of nodes read from a specified 'distance_' file.
 	Each line in the specified file will contain two comma-delimited
-	tokens in the form: 
+	tokens in the form:
 	x,o
 	where each token will be some non-negative integer written in
 	decimal form. The bitwise representations of x and o encode
@@ -100,18 +103,17 @@ def getNodes(i):
 	of 9 bits that correspond to the 9 squares of a TTT board, and
 	a 1-bit represents that there is a piece in the corresponding
 	square.
-	
+
 	A list of TTTGameNodes, each generated from a line (i.e., a pair of bit
 	representations), is returned once the file has been completely read.
-	
 	"""
 	if i == 9:
 		return [TTTGameNode()]
-	
-	w = open("Distance" + str(i), "r")
+
+	w = open(".distances/distance" + str(i), "r")
 	nodeReps = w.readlines()
 	w.close()
-	
+
 	nodes = []
 	for nodeRep in nodeReps:
 		xRep,oRep = nodeRep.split(",")
@@ -131,7 +133,7 @@ class TTTGameNode:
 	a win state, etc.
 
 	"""
-	
+
 	def __init__(self, board=None):
 		"""
 		Constructs a TTTGameNode given a board (list of lists).
@@ -160,27 +162,27 @@ class TTTGameNode:
 				if self.board[row][col] != nextBoard[row][col]: 
 					return row,col
 		return 0,0
-	
+
 	def getXRep(self):
 		"""
 		Returns the 9-bit representation for X's pieces on the board.
-		xRep, which is stored as an instance variable, is 111000000 for the 
-		following board.
+		xRep, which is stored as an instance variable, is 111000000 for
+                the following board.
 
-		 X | X | X  
+		 X | X | X 
 		---+---+---
-		 O | O |    
+		 O | O |
 		---+---+---
-		 O | O |    
+		 O | O |
 
 		"""
 		return self.xRep
-	
+
 	def getORep(self):
 		"""
 		Returns the 9-bit representation for O's pieces on the board.
-		oRep, which is stored as an instance variable, is 000110110 for the 
-		following board.
+		oRep, which is stored as an instance variable, is 000110110 for
+                the following board.
 	       
 		 X | X | X  
 		---+---+---
@@ -457,13 +459,16 @@ class TTTDiscretePlayer:
 		debug(str(time.time()) + "\tGenerating strategy...")
 		
 		"""
-		Having already created the necessary 'Distance_' files,
+		Having already created the necessary 'distance_' files,
 		we no longer need to call this line when generating
-		strategy.  However, one does not have the 'Distance_' files,
+		strategy.  However, one does not have the 'distance_' files,
 		one must be sure to uncomment this line and run the program
 		at least once.
 
 		"""
+                distances = os.getcwd() + "/.distances"
+                if not os.path.exists(distances):
+                        partitionByDistance()
 		# partitionByDistance()
 
 		"""
